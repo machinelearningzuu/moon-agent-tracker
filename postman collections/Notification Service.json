@@ -1,0 +1,90 @@
+{
+    "info": {
+      "name": "Notification Service API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Notification",
+        "request": {
+          "method": "POST",
+          "url": "http://localhost:8002/notifications",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": {
+              "notification_id": "notif_001",
+              "recipient_id": "Af4a0a5",
+              "type": "GENERAL",
+              "title": "Product Update",
+              "message": "New features added to Term Life (P100) product",
+              "status": "PENDING",
+              "metadata": "{\"product_id\": \"P100\", \"product_name\": \"Term Life\", \"category\": \"Life\"}"
+            }
+          }
+        }
+      },
+      {
+        "name": "Get Agent Notifications",
+        "request": {
+          "method": "GET",
+          "url": "http://localhost:8002/notifications/agent/Af4a0a5"
+        }
+      },
+      {
+        "name": "Notify Sale",
+        "request": {
+          "method": "POST",
+          "url": "http://localhost:8002/notifications/sales/notify",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": {
+              "sale_id": "S123456",
+              "agent_id": "A505270",
+              "product_id": "P106",
+              "sale_amount": 5000.00,
+              "branch_id": "B102",
+              "team_id": "T560871"
+            }
+          }
+        }
+      },
+      {
+        "name": "Update Notification Status",
+        "request": {
+          "method": "PUT",
+          "url": "http://localhost:8002/notifications/notif_001/status",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": {
+              "status": "SENT"
+            }
+          }
+        }
+      },
+      {
+        "name": "Health Check",
+        "request": {
+          "method": "GET",
+          "url": "http://localhost:8002/notifications/health"
+        }
+      }
+    ]
+  }

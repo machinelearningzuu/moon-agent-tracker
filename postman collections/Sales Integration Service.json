@@ -1,0 +1,127 @@
+{
+    "info": {
+      "name": "Insurance Microservices API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Agent Service",
+        "item": [
+          {
+            "name": "Get All Agents",
+            "request": {
+              "method": "GET",
+              "url": "http://localhost:8000/agents/"
+            }
+          },
+          {
+            "name": "Get Agent by ID",
+            "request": {
+              "method": "GET",
+              "url": "http://localhost:8000/agents/Af4a0a5"
+            }
+          },
+          {
+            "name": "Create Agent",
+            "request": {
+              "method": "POST",
+              "url": "http://localhost:8000/agents/",
+              "header": {
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "mode": "raw",
+                "raw": {
+                  "agent_id": "A999999",
+                  "name": "John Smith",
+                  "email": "john.smith@example.com",
+                  "phone": "123-456-7890",
+                  "branch_id": "B100",
+                  "team_id": "T43fe72",
+                  "products_allowed": "['P100', 'P101', 'P102']",
+                  "status": "active"
+                }
+              }
+            }
+          },
+          {
+            "name": "Update Agent",
+            "request": {
+              "method": "PUT",
+              "url": "http://localhost:8000/agents/Af4a0a5",
+              "header": {
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "mode": "raw",
+                "raw": {
+                  "agent_id": "Af4a0a5",
+                  "name": "Lindsey Roman Updated",
+                  "email": "lindsey.roman@example.com",
+                  "phone": "959-310-3413",
+                  "branch_id": "B100",
+                  "team_id": "T43fe72",
+                  "products_allowed": "['P105', 'P102', 'P103']",
+                  "status": "active"
+                }
+              }
+            }
+          },
+          {
+            "name": "Delete Agent",
+            "request": {
+              "method": "DELETE",
+              "url": "http://localhost:8000/agents/Af4a0a5"
+            }
+          },
+          {
+            "name": "Health Check",
+            "request": {
+              "method": "GET",
+              "url": "http://localhost:8000/agents/health"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Sales Integration Service",
+        "item": [
+          {
+            "name": "Create Sale",
+            "request": {
+              "method": "POST",
+              "url": "http://localhost:8001/sales/",
+              "header": {
+                "Content-Type": "application/json"
+              },
+              "body": {
+                "mode": "raw",
+                "raw": {
+                  "sale_id": "S100001",
+                  "agent_id": "Af4a0a5",
+                  "product_id": "P102",
+                  "sale_amount": 5000.00,
+                  "branch_id": "B100",
+                  "team_id": "T43fe72"
+                }
+              }
+            }
+          },
+          {
+            "name": "Get Sales by Agent",
+            "request": {
+              "method": "GET",
+              "url": "http://localhost:8001/sales/agent/Af4a0a5"
+            }
+          },
+          {
+            "name": "Health Check",
+            "request": {
+              "method": "GET",
+              "url": "http://localhost:8001/sales/health"
+            }
+          }
+        ]
+      }
+    ]
+  }

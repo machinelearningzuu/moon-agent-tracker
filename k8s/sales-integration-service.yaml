@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-integration-service
+  namespace: cmm707-microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sales-integration-service
+  template:
+    metadata:
+      labels:
+        app: sales-integration-service
+    spec:
+      containers:
+      - name: sales-integration-service
+        image: sales-integration-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: db-config
+        - secretRef:
+            name: db-credentials
+        env:
+        - name: AGENT_SERVICE_URL
+          value: "http://agent-service:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sales-integration-service
+  namespace: cmm707-microservices
+spec:
+  selector:
+    app: sales-integration-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+    nodePort: 30081
+  type: NodePort 

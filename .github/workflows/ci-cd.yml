@@ -1,0 +1,54 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Use Minikube Docker daemon
+        run: eval $(minikube docker-env)
+
+      - name: Build Docker Images
+        run: |
+          docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
+          docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
+          docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
+
+      - name: Setup kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@v0.0.14
+
+      - name: Deploy to Minikube (Blue)
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/secret.yaml
+          kubectl apply -f k8s/agent-service.yaml
+          kubectl apply -f k8s/notification-service.yaml
+          kubectl apply -f k8s/sales-integration-service.yaml
+          # Apply Aggregator as CronJob if needed
+          # kubectl apply -f k8s/aggregator-job.yaml
+          kubectl apply -f k8s/ingress.yaml
+
+      - name: Integration Tests
+        run: |
+          chmod +x scripts/run-tests.sh
+          ./scripts/run-tests.sh
+
+      - name: Clean up Minikube
+        if: always()
+        run: minikube delete 

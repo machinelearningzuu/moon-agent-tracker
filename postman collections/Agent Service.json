@@ -1,0 +1,91 @@
+{
+    "info": {
+        "name": "Agent Service API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get All Agents",
+            "request": {
+                "method": "GET",
+                "url": "{{base_url}}/agents/",
+                "header": []
+            }
+        },
+        {
+            "name": "Get Agent by ID",
+            "request": {
+                "method": "GET",
+                "url": "{{base_url}}/agents/Af4a0a5",
+                "header": []
+            }
+        },
+        {
+            "name": "Create Agent",
+            "request": {
+                "method": "POST",
+                "url": "{{base_url}}/agents/",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": {
+                        "agent_id": "Af4a0a5",
+                        "name": "Lindsey Roman",
+                        "email": "dudleynicholas@hotmail.com",
+                        "phone": "959-310-3413x1647",
+                        "branch_id": "B100",
+                        "team_id": "T43fe72",
+                        "products_allowed": ["P105", "P102"],
+                        "status": "active"
+                    }
+                }
+            }
+        },
+        {
+            "name": "Update Agent",
+            "request": {
+                "method": "PUT",
+                "url": "{{base_url}}/agents/A505270",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": {
+                        "agent_id": "A505270",
+                        "name": "Holly Wood",
+                        "email": "jacqueline19@jackson.biz",
+                        "phone": "835-030-5641x395",
+                        "branch_id": "B102",
+                        "team_id": "T560871",
+                        "products_allowed": ["P106", "P103"],
+                        "status": "inactive"
+                    }
+                }
+            }
+        },
+        {
+            "name": "Delete Agent",
+            "request": {
+                "method": "DELETE",
+                "url": "{{base_url}}/agents/A8ab9c9",
+                "header": []
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        }
+    ]
+}

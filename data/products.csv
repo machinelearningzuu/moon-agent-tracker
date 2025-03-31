@@ -1,0 +1,11 @@
+product_id,name,category,commission_percentage,status
+P100,Term Life,Life,5.0,active
+P101,Whole Life,Life,4.5,active
+P102,Child Plan,Child,6.0,active
+P103,Endowment Plan,Savings,5.5,active
+P104,Money Back,Savings,4.0,active
+P105,Retirement Plan,Retirement,6.5,active
+P106,Health Insurance,Health,3.5,active
+P107,Group Insurance,Corporate,2.5,active
+P108,ULIP,Investment,5.8,active
+P109,Critical Illness,Health,4.2,active

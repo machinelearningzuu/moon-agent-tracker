@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-config
+  namespace: cmm707-microservices
+data:
+  MYSQL_HOST: "host.docker.internal"
+  MYSQL_PORT: "3306"
+  MYSQL_DB: "moon_agent_tracker" 
