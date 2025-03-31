@@ -50,24 +50,20 @@ jobs:
       - name: Apply ingress
         run: kubectl apply -f k8s/ingress.yaml
 
-      # - name: Show pods status
-      #   run: kubectl get pods -n cmm707-microservices -o wide
-        
-      # - name: Describe agent-service pod
-      #   run: |
-      #       POD=$(kubectl get pods -n cmm707-microservices -l app=agent-service -o jsonpath="{.items[0].metadata.name}")
-      #       kubectl describe pod $POD -n cmm707-microservices
-        
-      # - name: Show logs for agent-service
-      #   run: |
-      #       POD=$(kubectl get pods -n cmm707-microservices -l app=agent-service -o jsonpath="{.items[0].metadata.name}")
-      #       kubectl logs $POD -n cmm707-microservices
-
-      # - name: Wait for all pods to be ready
-      #   run: |
-      #     kubectl wait --for=condition=ready pod -l app=agent-service -n cmm707-microservices --timeout=60s
-      #     kubectl wait --for=condition=ready pod -l app=sales-integration-service -n cmm707-microservices --timeout=60s
-      #     kubectl wait --for=condition=ready pod -l app=notification-service -n cmm707-microservices --timeout=60s
+      - name: Describe pods
+        run: |
+              $pods = kubectl get pods -n cmm707-microservices --no-headers -o custom-columns=":metadata.name"
+              foreach ($pod in $pods) {
+                  Write-Host "`n=== Logs for $pod ==="
+                  kubectl describe $pod -n cmm707-microservices
+                  }
+      - name: Show logs
+        run: |
+              $pods = kubectl get pods -n cmm707-microservices --no-headers -o custom-columns=":metadata.name"
+              foreach ($pod in $pods) {
+                Write-Host "`n=== Logs for $pod ==="
+                kubectl logs $pod -n cmm707-microservices
+              }
             
       - name: Port forward services
         run: |
