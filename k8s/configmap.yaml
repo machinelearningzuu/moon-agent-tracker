@@ -4,6 +4,6 @@ metadata:
   name: db-config
   namespace: cmm707-microservices
 data:
-  MYSQL_HOST: "host.docker.internal"
+  MYSQL_HOST: "127.0.0.1"
   MYSQL_PORT: "3306"
-  MYSQL_DB: "moon_agent_tracker" 
+  MYSQL_DB: "moon_agent_tracker"
