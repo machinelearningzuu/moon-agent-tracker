@@ -43,6 +43,12 @@ jobs:
           # kubectl apply -f k8s/aggregator-job.yaml
           kubectl apply -f k8s/ingress.yaml
 
+      - name: Wait for all pods to be ready
+        run: |
+          kubectl wait --for=condition=ready pod -l app=agent-service -n cmm707-microservices --timeout=60s
+          kubectl wait --for=condition=ready pod -l app=sales-integration-service -n cmm707-microservices --timeout=60s
+          kubectl wait --for=condition=ready pod -l app=notification-service -n cmm707-microservices --timeout=60s
+            
       - name: Port forward services
         run: |
           kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 &
