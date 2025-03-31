@@ -55,10 +55,6 @@ jobs:
           echo "🔍 Describing all pods in namespace: cmm707-microservices"
           for pod in $(kubectl get pods -n cmm707-microservices -o custom-columns=":metadata.name" --no-headers); do
             echo "=========================================="
-            echo "📦 Pod: $pod"
-            echo "------------------------------------------"
-            kubectl describe pod $pod -n cmm707-microservices
-            echo ""
             echo "📜 Logs for $pod"
             echo "------------------------------------------"
             kubectl logs $pod -n cmm707-microservices || echo "⚠️ Could not get logs for $pod"
