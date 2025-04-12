@@ -3,9 +3,8 @@ kind: Ingress
 metadata:
   name: microservices-ingress
   namespace: cmm707-microservices
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
 spec:
+  ingressClassName: nginx
   rules:
   - host: agent.example.com
     http:

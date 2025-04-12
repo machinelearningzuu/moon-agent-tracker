@@ -1,0 +1,6 @@
+notification_id,recipient_id,type,title,message,status,created_at,sent_at
+notif_gen_001,A505270,GENERAL,"Commission Rate Update","Commission rate for Health Insurance (P106) has been updated to 3.5%",PENDING,"2025-03-27 20:45:20",NULL
+notif_gen_002,A505270,GENERAL,"Commission Rate Update","Commission rate for Health Insurance (P106) has been updated to 3.5%",PENDING,"2025-03-27 20:45:15",NULL
+notif_gen_003,A505270,GENERAL,"Commission Rate Update","Commission rate for Health Insurance (P106) has been updated to 3.5%",PENDING,"2025-03-27 20:45:23",NULL
+notif_gen_004,A505270,GENERAL,"Commission Rate Update","Commission rate for Health Insurance (P106) has been updated to 3.5%",SENT,"2025-03-27 20:46:49","2025-03-27 20:55:21"
+sale_S1234588,Af4a0a5,SALE,"New Sale Recorded","Sale S1234588 has been recorded successfully",PENDING,"2025-03-27 21:01:48",NULL

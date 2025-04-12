@@ -23,21 +23,45 @@ logger = logging.getLogger(__name__)
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 SALES_SERVICE_URL = os.getenv("SALES_SERVICE_URL", "http://sales-integration-service:8001")
 
+# AGENT_SERVICE_URL = "http://localhost:8000"
+# SALES_SERVICE_URL = "http://localhost:8001"
+
 async def validate_agent(agent_id: str):
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{AGENT_SERVICE_URL}/agents/{agent_id}")
+            url = f"{AGENT_SERVICE_URL}/agents/{agent_id}"
+            logger.info(f"About to request agent at: {url}")
+            response = await client.get(url)
+            logger.info(f"Agent validation response status: {response.status_code}")
+            
             if response.status_code == 404:
-                raise HTTPException(status_code=404, detail="Agent not found")
+                error_msg = f"Agent not found: {agent_id}"
+                logger.warning(error_msg)
+                raise HTTPException(status_code=404, detail=error_msg)
+            
+            if response.status_code != 200:
+                error_msg = f"Unexpected response from agent service: {response.status_code} - {response.text}"
+                logger.error(error_msg)
+                raise HTTPException(status_code=response.status_code, detail=error_msg)
+                
+            logger.info(f"Agent {agent_id} validated successfully")
             return response.json()
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Agent service unavailable")
+    except httpx.ConnectError as e:
+        error_msg = f"Failed to connect to agent service at {url}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=503, detail=error_msg)
+    except httpx.HTTPError as e:
+        error_msg = f"HTTP error while validating agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/", response_model=NotificationSchema)
 async def create_notification(notification: NotificationCreate, db: Session = Depends(get_db)):
     try:
         # Validate agent exists
+        logger.info(f"Creating notification for agent: {notification.recipient_id}")
         await validate_agent(notification.recipient_id)
+        logger.info(f"Agent {notification.recipient_id} validated")
         
         db_notification = Notification(
             **notification.dict(),
@@ -47,16 +71,28 @@ async def create_notification(notification: NotificationCreate, db: Session = De
         db.add(db_notification)
         db.commit()
         db.refresh(db_notification)
+        logger.info(f"Created notification {db_notification.notification_id} for agent {notification.recipient_id}")
         return db_notification
     
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code and detail
+        logger.error(f"HTTP error occurred: {e.detail}")
+        raise e
     except SQLAlchemyError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Database error while creating notification for agent {notification.recipient_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    except Exception as e:
+        error_msg = f"Unexpected error while creating notification: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/agent/{agent_id}", response_model=List[NotificationSchema])
 async def get_agent_notifications(agent_id: str, db: Session = Depends(get_db)):
     try:
         # Validate agent exists
+        logger.info(f"Getting notifications for agent: {agent_id}")
         await validate_agent(agent_id)
         
         notifications = db.query(Notification)\
@@ -79,17 +115,34 @@ async def get_agent_notifications(agent_id: str, db: Session = Depends(get_db)):
             }
             response_notifications.append(notif_dict)
             
+        logger.info(f"Retrieved {len(notifications)} notifications for agent {agent_id}")
         return response_notifications
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code and detail
+        logger.error(f"HTTP error occurred: {e.detail}")
+        raise e
     except SQLAlchemyError as e:
-        logger.error(f"Database error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Database error while getting notifications for agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
-        logger.error(f"Error getting notifications: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Error getting notifications for agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/sales/notify")
 async def notify_sale(sale_data: dict, db: Session = Depends(get_db)):
     try:
+        if 'sale_id' not in sale_data:
+            error_msg = "Missing required field: sale_id in sale_data"
+            logger.error(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
+            
+        if 'agent_id' not in sale_data:
+            error_msg = "Missing required field: agent_id in sale_data"
+            logger.error(error_msg)
+            raise HTTPException(status_code=400, detail=error_msg)
+            
         # Create notification for the agent
         notification = NotificationCreate(
             notification_id=f"sale_{sale_data['sale_id']}",
@@ -100,14 +153,24 @@ async def notify_sale(sale_data: dict, db: Session = Depends(get_db)):
             status=NotificationStatus.PENDING
         )
         
+        logger.info(f"Creating sale notification for agent {sale_data['agent_id']}, sale {sale_data['sale_id']}")
         return await create_notification(notification, db)
+    except KeyError as e:
+        error_msg = f"Missing required field in sale_data: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code and detail
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Error creating sale notification: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.put("/{notification_id}/status")
 async def update_notification_status(
     notification_id: str,
-    status_update: StatusUpdate,  # Change this parameter
+    status_update: StatusUpdate,
     db: Session = Depends(get_db)
 ):
     try:
@@ -116,18 +179,39 @@ async def update_notification_status(
             .first()
         
         if not notification:
-            raise HTTPException(status_code=404, detail="Notification not found")
+            error_msg = f"Notification not found: {notification_id}"
+            logger.warning(error_msg)
+            raise HTTPException(status_code=404, detail=error_msg)
         
-        notification.status = status_update.status  # Update this line
-        if status_update.status == NotificationStatus.SENT:  # Update this line
+        old_status = notification.status
+        notification.status = status_update.status
+        if status_update.status == NotificationStatus.SENT:
             notification.sent_at = datetime.now()
         
         db.commit()
-        return {"message": "Notification status updated successfully"}
+        logger.info(f"Updated notification {notification_id} status from {old_status} to {status_update.status}")
+        return {"message": f"Notification {notification_id} status updated from {old_status} to {status_update.status}"}
     except SQLAlchemyError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        error_msg = f"Database error while updating notification {notification_id} status: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    except Exception as e:
+        error_msg = f"Error updating notification {notification_id} status: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    try:
+        return {
+            "status": "healthy",
+            "database": "connected"
+        }
+    except SQLAlchemyError as e:
+        error_msg = f"Database health check failed: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(
+            status_code=503,
+            detail=error_msg
+        )

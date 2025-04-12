@@ -14,34 +14,42 @@ router = APIRouter()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# AGENT_SERVICE_URL = "http://localhost:8000/agents"
+# AGENT_SERVICE_URL = "http://localhost:8000"
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
 
 async def validate_agent(agent_id: str):
     try:
         logger.info(f"Validating agent: {agent_id}")
         logger.info(f"Agent service URL: {AGENT_SERVICE_URL}")
+        url = f"{AGENT_SERVICE_URL}/agents/{agent_id}"
+        
         async with httpx.AsyncClient() as client:
-            # Fix the endpoints by adding /agents
-            all_agents = await client.get(f"{AGENT_SERVICE_URL}/agents/")
-            logger.info(f"All agents response status: {all_agents.status_code}")
-            if all_agents.status_code == 200:
-                logger.info(f"Available agents: {all_agents.json()}")
-            
-            # Fix the specific agent endpoint
-            response = await client.get(f"{AGENT_SERVICE_URL}/agents/{agent_id}")
-            logger.info(f"Specific agent response status: {response.status_code}")
-            logger.info(f"Response content: {response.text}")
+            response = await client.get(url)
+            logger.info(f"Agent validation response status: {response.status_code}")
             
             if response.status_code == 404:
-                raise HTTPException(status_code=404, detail="Agent not found")
+                error_msg = f"Agent not found: {agent_id}"
+                logger.warning(error_msg)
+                raise HTTPException(status_code=404, detail=error_msg)
+                
+            if response.status_code != 200:
+                error_msg = f"Unexpected response from agent service: {response.status_code} - {response.text}"
+                logger.error(error_msg)
+                raise HTTPException(status_code=response.status_code, detail=error_msg)
+                
+            logger.info(f"Agent {agent_id} validated successfully")
             return response.json()
     except httpx.ConnectError as e:
-        logger.error(f"Connection error: {str(e)}")
+        error_msg = f"Connection error: Could not connect to agent service at {url}: {str(e)}"
+        logger.error(error_msg)
         raise HTTPException(
             status_code=503,
-            detail="Could not connect to agent service"
+            detail=error_msg
         )
+    except httpx.HTTPError as e:
+        error_msg = f"HTTP error while validating agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.post("/", response_model=SaleSchema)
 async def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
@@ -57,25 +65,28 @@ async def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
         logger.info(f"Products allowed for agent: {products_allowed}")
         
         if sale.product_id not in products_allowed:
-            logger.warning(f"Product {sale.product_id} not allowed for agent {sale.agent_id}")
+            error_msg = f"Product {sale.product_id} not allowed for agent {sale.agent_id}. Allowed products: {products_allowed}"
+            logger.warning(error_msg)
             raise HTTPException(
                 status_code=400,
-                detail=f"Agent {sale.agent_id} is not authorized to sell product {sale.product_id}"
+                detail=error_msg
             )
 
         # Verify branch and team match the agent's data
         if sale.branch_id != agent_data.get('branch_id'):
-            logger.warning(f"Branch mismatch: Sale branch {sale.branch_id} != Agent branch {agent_data.get('branch_id')}")
+            error_msg = f"Branch mismatch: Sale branch {sale.branch_id} != Agent branch {agent_data.get('branch_id')}"
+            logger.warning(error_msg)
             raise HTTPException(
                 status_code=400,
-                detail="Branch ID does not match agent's branch"
+                detail=error_msg
             )
 
         if sale.team_id != agent_data.get('team_id'):
-            logger.warning(f"Team mismatch: Sale team {sale.team_id} != Agent team {agent_data.get('team_id')}")
+            error_msg = f"Team mismatch: Sale team {sale.team_id} != Agent team {agent_data.get('team_id')}"
+            logger.warning(error_msg)
             raise HTTPException(
                 status_code=400,
-                detail="Team ID does not match agent's team"
+                detail=error_msg
             )
 
         # Create sale record
@@ -95,34 +106,47 @@ async def create_sale(sale: SaleCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_sale)
         
-        logger.info(f"Sale created successfully: {db_sale.__dict__}")
+        logger.info(f"Sale created successfully: {db_sale.sale_id} for agent {db_sale.agent_id}")
         return db_sale
         
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code and detail
+        logger.error(f"HTTP error occurred: {e.detail}")
+        raise e
     except SQLAlchemyError as e:
         logger.error(f"Database error while creating sale: {str(e)}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error while creating sale: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error while creating sale: {str(e)}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 @router.get("/agent/{agent_id}", response_model=List[SaleSchema])
 async def get_sales_by_agent(agent_id: str, db: Session = Depends(get_db)):
     try:
         # Log the received agent_id
-        logger.info(f"Received request for agent_id: {agent_id}")
-        
+        logger.info(f"Received request for sales by agent: {agent_id}")
+    
         # Validate agent exists
         agent_data = await validate_agent(agent_id)
         logger.info(f"Agent validated: {agent_data}")
         
         sales = db.query(Sale).filter(Sale.agent_id == agent_id).all()
-        logger.info(f"Found {len(sales)} sales for agent")
+        logger.info(f"Found {len(sales)} sales for agent {agent_id}")
         return sales
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code and detail
+        logger.error(f"HTTP error occurred: {e.detail}")
+        raise e
     except SQLAlchemyError as e:
-        logger.error(f"Database error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        error_msg = f"Database error while retrieving sales for agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    except Exception as e:
+        error_msg = f"Unexpected error while retrieving sales for agent {agent_id}: {str(e)}"
+        logger.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
 
 @router.get("/health")
 def health_check():
@@ -131,8 +155,10 @@ def health_check():
             "status": "healthy",
             "database": "connected"
         }
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
+        error_msg = f"Database health check failed: {str(e)}"
+        logger.error(error_msg)
         raise HTTPException(
             status_code=503,
-            detail="Service unavailable - database connection failed"
-        )
+            detail=error_msg
+        )   
