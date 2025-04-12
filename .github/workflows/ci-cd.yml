@@ -91,11 +91,12 @@ jobs:
               echo ""
             done
 
-      - name: Integration Tests
-        run: |
-          chmod +x scripts/run-tests.sh
-          ./scripts/run-tests.sh
-
+      - name: Install Python Dependencies
+        run: pip install requests
+        
+      - name: Integration Tests (Python)
+        run: python scripts/run-tests.py
+        
       - name: Clean up Minikube
         if: always()
         run: minikube delete
