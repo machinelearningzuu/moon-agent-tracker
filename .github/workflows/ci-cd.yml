@@ -43,7 +43,6 @@ jobs:
           kubectl apply -f k8s/agent-service.yaml
           kubectl apply -f k8s/notification-service.yaml
           kubectl apply -f k8s/sales-integration-service.yaml
-          # kubectl apply -f k8s/aggregator-job.yaml
           kubectl apply -f k8s/ingress.yaml
 
       - name: Waiting for ingress controller pods to be ready
@@ -73,6 +72,12 @@ jobs:
       #     echo "Waiting for services to be available..."
       #     sleep 20  # Increased wait time
        
+      - name: Curl health endpoints before test
+        run: |
+          curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
+          curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
+          curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
+    
       - name: Port forward services
         run: |
           kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 &
