@@ -70,8 +70,9 @@ jobs:
           kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 &
           kubectl port-forward -n cmm707-microservices service/sales-integration-service 8001:8001 &
           kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 &
-          sleep 5
-
+          echo "Waiting for services to be available..."
+          sleep 20  # Increased wait time
+          
       - name: Show pods status
         run: kubectl get pods -n cmm707-microservices -o wide
           
