@@ -17,6 +17,8 @@ spec:
       - name: agent-service
         image: agent-service:latest
         imagePullPolicy: IfNotPresent
+        command: ["sleep", "3600"]  # 👈 override CMD to keep container alive
+        
         ports:
         - containerPort: 8000
         envFrom:
