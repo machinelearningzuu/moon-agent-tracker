@@ -18,6 +18,8 @@ jobs:
       - name: Start Minikube with profile
         run: |
           minikube start --profile=cmm707 --driver=docker
+          echo "🕒 Sleeping 20s to let Minikube stabilize..."
+          sleep 20
 
       # - name: Use Minikube Docker daemon
       #   run: eval $(minikube docker-env)
@@ -27,6 +29,13 @@ jobs:
       #     docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
       #     docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
       #     docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
+
+      - name: Check Minikube status and nodes
+        run: |
+          minikube status --profile=cmm707
+          kubectl get nodes -o wide
+          kubectl get pods -A
+
 
       - name: Build Docker Images inside Minikube
         run: |
@@ -62,6 +71,17 @@ jobs:
       - name: Apply ingress
         run: kubectl apply -f k8s/ingress.yaml
 
+      - name: Describe problematic pods if stuck
+        run: |
+          echo "🔍 Diagnosing pods stuck in ContainerCreating..."
+          kubectl get pods -n cmm707-microservices -o wide
+          for pod in $(kubectl get pods -n cmm707-microservices -o jsonpath='{.items[?(@.status.phase=="Pending")].metadata.name}'); do
+            echo "📦 Troubleshooting $pod"
+            kubectl describe pod $pod -n cmm707-microservices
+            echo "--- Events ---"
+            kubectl get events -n cmm707-microservices --sort-by='.lastTimestamp' | grep $pod || true
+          done
+      
       - name: Describe pods
         run: |
           echo "🔍 Describing all pods in namespace: cmm707-microservices"
