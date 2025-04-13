@@ -82,18 +82,22 @@ jobs:
       #     echo "Waiting for services to be available..."
       #     sleep 20  # Increased wait time
     
-      - name: Port forward services
+      - name: Port forward and run tests
         run: |
-          kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 &
-          kubectl port-forward -n cmm707-microservices service/sales-integration-service 8001:8001 &
-          kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 &
-          
-          echo "⏳ Waiting for services to be ready..."
+          echo "⏳ Port-forwarding services..."
+          kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 > /dev/null 2>&1 &
+          kubectl port-forward -n cmm707-microservices service/sales-integration-service 8001:8001 > /dev/null 2>&1 &
+          kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 > /dev/null 2>&1 &
+      
+          echo "🕒 Waiting for port-forward to stabilize..."
           for i in {1..30}; do
             nc -z 127.0.0.1 8000 && nc -z 127.0.0.1 8001 && nc -z 127.0.0.1 8002 && break
-            echo "Retry $i: Services not ready yet"
+            echo "Retry $i: ports not available yet"
             sleep 2
           done
+      
+          echo "🚀 Running integration tests..."
+          python scripts/run-tests.py
         
       - name: Show pods status
         run: kubectl get pods -n cmm707-microservices -o wide
@@ -113,18 +117,15 @@ jobs:
               echo "=========================================="
               echo ""
             done
-
-      - name: Install Python Dependencies
-        run: pip install requests
         
-      - name: Curl health endpoints before test
-        run: |
-          curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
-          curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
-          curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
+      # - name: Curl health endpoints before test
+      #   run: |
+      #     curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
+      #     curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
+      #     curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
 
-      - name: Integration Tests (Python)
-        run: python scripts/run-tests.py
+      # - name: Integration Tests (Python)
+      #   run: python scripts/run-tests.py
         
       - name: Clean up Minikube
         if: always()
