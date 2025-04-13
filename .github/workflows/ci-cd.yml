@@ -15,8 +15,9 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Start Minikube
-        uses: medyagh/setup-minikube@v0.0.14
+      - name: Start Minikube with profile
+        run: |
+          minikube start --profile=cmm707 --driver=docker
 
       # - name: Use Minikube Docker daemon
       #   run: eval $(minikube docker-env)
@@ -29,13 +30,15 @@ jobs:
 
       - name: Build Docker Images inside Minikube
         run: |
-          eval $(minikube docker-env)
+          eval $(minikube -p cmm707 docker-env)
           docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
           docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
           docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
 
-      - name: Check Docker images in Minikube
-        run: docker images
+      - name: Verify Docker Images in Minikube
+        run: |
+          eval $(minikube -p cmm707 docker-env)
+          docker images
 
       - name: Setup kubectl
         run: |
