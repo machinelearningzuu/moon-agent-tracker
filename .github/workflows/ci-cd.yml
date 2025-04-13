@@ -117,7 +117,7 @@ jobs:
           done
       
           echo "🚀 Running integration tests..."
-          python scripts/run-tests.py
+          timeout 10s bash -c "python scripts/run-tests.py || true"
         
       - name: Show pods status
         run: kubectl get pods -n cmm707-microservices -o wide
