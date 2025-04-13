@@ -71,12 +71,6 @@ jobs:
       #     kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 &
       #     echo "Waiting for services to be available..."
       #     sleep 20  # Increased wait time
-       
-      - name: Curl health endpoints before test
-        run: |
-          curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
-          curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
-          curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
     
       - name: Port forward services
         run: |
@@ -113,6 +107,12 @@ jobs:
       - name: Install Python Dependencies
         run: pip install requests
         
+      - name: Curl health endpoints before test
+        run: |
+          curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
+          curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
+          curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
+
       - name: Integration Tests (Python)
         run: python scripts/run-tests.py
         
