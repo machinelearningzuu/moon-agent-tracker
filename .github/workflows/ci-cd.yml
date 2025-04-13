@@ -18,11 +18,18 @@ jobs:
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.14
 
-      - name: Use Minikube Docker daemon
-        run: eval $(minikube docker-env)
+      # - name: Use Minikube Docker daemon
+      #   run: eval $(minikube docker-env)
 
-      - name: Build Docker Images
+      # - name: Build Docker Images
+      #   run: |
+      #     docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
+      #     docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
+      #     docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
+
+      - name: Build Docker Images inside Minikube
         run: |
+          eval $(minikube docker-env)
           docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
           docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
           docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
