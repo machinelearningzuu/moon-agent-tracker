@@ -24,7 +24,7 @@ jobs:
 
     - name: Update kubeconfig for EKS
       run: |
-        aws eks update-kubeconfig --name moonagent-cluster --region ap-southeast-1
+        aws eks update-kubeconfig --name moon-cluster --region ap-southeast-1
 
     - name: Deploy Green (v1) services (first-time only)
       if: github.event_name == 'workflow_dispatch'
