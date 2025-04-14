@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sales-integration-service
+  name: sales-integration-service-v2
   namespace: cmm707-microservices
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: sales-integration-service
-      version: v1
+      version: v2
   template:
     metadata:
       labels:
         app: sales-integration-service
-        version: v1
+        version: v2
     spec:
       containers:
-      - name: sales-integration-service
+      - name: sales-integration-service-v2
         image: 710271914931.dkr.ecr.ap-southeast-1.amazonaws.com/sales-integration-service:latest
         imagePullPolicy: IfNotPresent
         ports:
@@ -32,18 +32,3 @@ spec:
             name: db-config
         - secretRef:
             name: db-credentials
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sales-integration-service
-  namespace: cmm707-microservices
-spec:
-  type: LoadBalancer
-  selector:
-    app: sales-integration-service
-    version: v1
-  ports:
-  - protocol: TCP
-    port: 8001
-    targetPort: 8001

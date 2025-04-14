@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: notification-service
+  name: notification-service-v2
   namespace: cmm707-microservices
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: notification-service
-      version: v1
+      version: v2
   template:
     metadata:
       labels:
         app: notification-service
-        version: v1
+        version: v2
     spec:
       containers:
-      - name: notification-service
+      - name: notification-service-v2
         image: 710271914931.dkr.ecr.ap-southeast-1.amazonaws.com/notification-service:latest
         imagePullPolicy: IfNotPresent
         ports:
@@ -32,18 +32,3 @@ spec:
             name: db-config
         - secretRef:
             name: db-credentials
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: notification-service
-  namespace: cmm707-microservices
-spec:
-  type: LoadBalancer
-  selector:
-    app: notification-service
-    version: v1
-  ports:
-  - protocol: TCP
-    port: 8002
-    targetPort: 8002

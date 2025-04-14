@@ -1,152 +1,67 @@
-name: CI/CD Pipeline
+name: EKS Blue-Green Deployment
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
 
 jobs:
-  build-and-deploy:
+  deploy-to-eks:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::710271914931:role/GitHubEKSDeployRole
+        aws-region: ap-southeast-1
 
-      - name: Start Minikube with profile
-        run: |
-          minikube start --profile=cmm707 --driver=docker
-          echo "🕒 Sleeping 20s to let Minikube stabilize..."
-          sleep 20
+    - name: Update kubeconfig for EKS
+      run: |
+        aws eks update-kubeconfig --name moonagent-cluster --region ap-southeast-1
 
-      # - name: Use Minikube Docker daemon
-      #   run: eval $(minikube docker-env)
+    - name: Deploy Green (v1) services (first-time only)
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secret.yaml
+        kubectl apply -f k8s/agent-service.yaml
+        kubectl apply -f k8s/sales-integration-service.yaml
+        kubectl apply -f k8s/notification-service.yaml
+        kubectl apply -f k8s/ingress.yaml
 
-      # - name: Build Docker Images
-      #   run: |
-      #     docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
-      #     docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
-      #     docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
+    - name: Deploy Blue (v2) versions of services
+      run: |
+        kubectl apply -f k8s/agent-service-v2.yaml
+        kubectl apply -f k8s/sales-integration-service-v2.yaml
+        kubectl apply -f k8s/notification-service-v2.yaml
 
-      - name: Check Minikube status and nodes
-        run: |
-          minikube status --profile=cmm707
-          kubectl get nodes -o wide
-          kubectl get pods -A
+    - name: Switch traffic to v2 (Blue-Green switch)
+      run: |
+        kubectl patch service agent-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "agent-service", "version": "v2"}}}'
+        kubectl patch service sales-integration-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "sales-integration-service", "version": "v2"}}}'
+        kubectl patch service notification-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "notification-service", "version": "v2"}}}'
 
+    - name: Run integration tests on EKS
+      run: |
+        pip install requests
+        python scripts/run-tests-eks.py
 
-      - name: Build Docker Images inside Minikube
-        run: |
-          eval $(minikube -p cmm707 docker-env)
-          docker build -t agent-service:latest -f microservices/agent-service/Dockerfile microservices/agent-service
-          docker build -t notification-service:latest -f microservices/notification-service/Dockerfile microservices/notification-service
-          docker build -t sales-integration-service:latest -f microservices/sales-integration-service/Dockerfile microservices/sales-integration-service
+    - name: Rollback to v1 if tests fail
+      if: failure()
+      run: |
+        echo "Tests failed. Rolling back to version v1..."
+        kubectl patch service agent-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "agent-service", "version": "v1"}}}'
+        kubectl patch service sales-integration-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "sales-integration-service", "version": "v1"}}}'
+        kubectl patch service notification-service -n cmm707-microservices -p '{"spec": {"selector": {"app": "notification-service", "version": "v1"}}}'
 
-      - name: Verify Docker Images in Minikube
-        run: |
-          eval $(minikube -p cmm707 docker-env)
-          docker images
-
-      - name: Setup kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
-          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-
-      - name: Deploy to Minikube (Blue)
-        run: |
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/configmap.yaml
-          kubectl apply -f k8s/secret.yaml
-          kubectl apply -f k8s/agent-service.yaml
-          kubectl apply -f k8s/notification-service.yaml
-          kubectl apply -f k8s/sales-integration-service.yaml
-          kubectl apply -f k8s/ingress.yaml
-
-      - name: Waiting for ingress controller pods to be ready
-        run: |
-          kubectl get pods -n kube-system
-
-      - name: Apply ingress
-        run: kubectl apply -f k8s/ingress.yaml
-
-      - name: Describe problematic pods if stuck
-        run: |
-          echo "🔍 Diagnosing pods stuck in ContainerCreating..."
-          kubectl get pods -n cmm707-microservices -o wide
-          for pod in $(kubectl get pods -n cmm707-microservices -o jsonpath='{.items[?(@.status.phase=="Pending")].metadata.name}'); do
-            echo "📦 Troubleshooting $pod"
-            kubectl describe pod $pod -n cmm707-microservices
-            echo "--- Events ---"
-            kubectl get events -n cmm707-microservices --sort-by='.lastTimestamp' | grep $pod || true
-          done
-      
-      - name: Describe pods
-        run: |
-          echo "🔍 Describing all pods in namespace: cmm707-microservices"
-          for pod in $(kubectl get pods -n cmm707-microservices -o custom-columns=":metadata.name" --no-headers); do
-            echo "=========================================="
-            echo "📜 Logs for $pod"
-            echo "------------------------------------------"
-            kubectl logs $pod -n cmm707-microservices || echo "⚠️ Could not get logs for $pod"
-            echo "=========================================="
-            echo ""
-          done
-            
-      # - name: Port forward services
-      #   run: |
-      #     kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 &
-      #     kubectl port-forward -n cmm707-microservices service/sales-integration-service 8001:8001 &
-      #     kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 &
-      #     echo "Waiting for services to be available..."
-      #     sleep 20  # Increased wait time
-    
-      - name: Port forward and run tests
-        run: |
-          echo "⏳ Port-forwarding services..."
-          kubectl port-forward -n cmm707-microservices service/agent-service 8000:8000 > /dev/null 2>&1 &
-          kubectl port-forward -n cmm707-microservices service/sales-integration-service 8001:8001 > /dev/null 2>&1 &
-          kubectl port-forward -n cmm707-microservices service/notification-service 8002:8002 > /dev/null 2>&1 &
-      
-          echo "🕒 Waiting for port-forward to stabilize..."
-          for i in {1..30}; do
-            nc -z 127.0.0.1 8000 && nc -z 127.0.0.1 8001 && nc -z 127.0.0.1 8002 && break
-            echo "Retry $i: ports not available yet"
-            sleep 2
-          done
-      
-          echo "🚀 Running integration tests..."
-          timeout 10s bash -c "python scripts/run-tests.py || true"
-        
-      - name: Show pods status
-        run: kubectl get pods -n cmm707-microservices -o wide
-          
-      - name: Describe pods
-        run: |
-            echo "🔍 Describing all pods in namespace: cmm707-microservices"
-            for pod in $(kubectl get pods -n cmm707-microservices -o custom-columns=":metadata.name" --no-headers); do
-              echo "=========================================="
-              echo "📦 Pod: $pod"
-              echo "------------------------------------------"
-              kubectl describe pod $pod -n cmm707-microservices
-              echo ""
-              echo "📜 Logs for $pod"
-              echo "------------------------------------------"
-              kubectl logs $pod -n cmm707-microservices || echo "⚠️ Could not get logs for $pod"
-              echo "=========================================="
-              echo ""
-            done
-        
-      # - name: Curl health endpoints before test
-      #   run: |
-      #     curl http://127.0.0.1:8000/agents/health || echo "Agent failed"
-      #     curl http://127.0.0.1:8001/sales/health || echo "Sales failed"
-      #     curl http://127.0.0.1:8002/notifications/health || echo "Notification failed"
-
-      # - name: Integration Tests (Python)
-      #   run: python scripts/run-tests.py
-        
-      - name: Clean up Minikube
-        if: always()
-        run: minikube delete
+    - name: Verify Deployment
+      run: |
+        kubectl get pods -n cmm707-microservices
+        kubectl get svc -n cmm707-microservices
