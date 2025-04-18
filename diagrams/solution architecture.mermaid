@@ -1,0 +1,45 @@
+flowchart LR
+    subgraph EKS["Kubernetes Cluster (EKS)"]
+        AG["Agent Service"]
+        IN["Sales Integration Service"]
+        NO["Notification Service"]
+        CRON["Aggregator CronJob"]
+        DB[("MySQL Database (RDS)")]
+    end
+
+    subgraph DASH["QuickSight Dashboards"]
+        TP["Team Performance"]
+        PP["Product Performance"]
+        BP["Branch Performance"]
+        AP["Agent Performance"]
+        NS["Notification Summary"]
+    end
+
+    subgraph AWS["AWS Cloud"]
+        RS["AWS Redshift"]
+        CW["Amazon CloudWatch"]
+        DASH
+    end
+
+    UI["User / API Client"] -- Create / View Agent --> AG
+    AG -- Forward Sales Info --> IN
+    CORE["MoonInsurance Core System"] -- Push Sales Data --> IN
+    IN -- Notify If Achieved --> NO
+
+    AG -- Store Agent Info --> DB
+    IN -- Store Sales Data --> DB
+    CRON <-- Query Aggregated Sales --> DB
+    CRON -- Upload Metrics --> RS
+    RS --> TP & PP & BP & AP & NS
+
+    %% Log Monitoring Flows
+    AG -->|Logs| CW
+    IN -->|Logs| CW
+    NO -->|Logs| CW
+    CRON -->|Logs| CW
+
+    %% Styling
+    classDef requestFlow stroke:#2563eb,stroke-width:2px;
+    classDef dataFlow stroke:#16a34a,stroke-dasharray: 5 5,stroke-width:2px;
+    class UI,AG,IN,NO,CORE requestFlow;
+    class DB,TP,PP,BP,AP,NS,RS,CRON dataFlow;

@@ -1,0 +1,59 @@
+flowchart TD
+    %% CI/CD and Build
+    GITHUB[GitHub Actions CI CD]
+    TEST[Integration Test Suite]
+    ECR[AWS Elastic Container Registry]
+
+    %% Microservices v1 (Green)
+    AGG_GREEN[Agent Service v1]
+    INT_GREEN[Sales Service v1]
+    NOT_GREEN[Notification Service v1]
+
+    %% Microservices v2 (Blue)
+    AGG_BLUE[Agent Service v2]
+    INT_BLUE[Sales Service v2]
+    NOT_BLUE[Notification Service v2]
+
+    %% Traffic Control
+    SWITCH[Switch Traffic to v2]
+    ROLLBACK[Rollback to v1]
+    LB[Ingress LoadBalancer]
+
+    %% Kubernetes Infra
+    subgraph EKS Cluster
+        NAMESPACE[cmm707 microservices namespace]
+        CRON[Aggregator CronJob]
+        DB[MySQL Database]
+        AGG_GREEN --- LB
+        INT_GREEN --- LB
+        NOT_GREEN --- LB
+        AGG_BLUE --- LB
+        INT_BLUE --- LB
+        NOT_BLUE --- LB
+    end
+
+    %% Flow Arrows
+    GITHUB --> ECR
+    GITHUB --> AGG_GREEN
+    GITHUB --> INT_GREEN
+    GITHUB --> NOT_GREEN
+    GITHUB --> AGG_BLUE
+    GITHUB --> INT_BLUE
+    GITHUB --> NOT_BLUE
+    GITHUB --> TEST
+    TEST --> SWITCH
+    TEST --> ROLLBACK
+    SWITCH --> LB
+    ROLLBACK --> LB
+    CRON --> DB
+
+    %% Styling
+    classDef ci stroke:#3b82f6,stroke-width:2px;
+    classDef green stroke:#10b981,stroke-width:2px;
+    classDef blue stroke:#6366f1,stroke-dasharray: 5 5;
+    classDef control stroke:#f59e0b,stroke-width:2px;
+
+    class GITHUB,TEST,ECR ci;
+    class AGG_GREEN,INT_GREEN,NOT_GREEN green;
+    class AGG_BLUE,INT_BLUE,NOT_BLUE blue;
+    class SWITCH,ROLLBACK control;

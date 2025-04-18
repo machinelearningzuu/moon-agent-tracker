@@ -8,3 +8,9 @@ data:
   # MYSQL_HOST: "host.docker.internal"
   MYSQL_PORT: "3306"
   MYSQL_DB: "moon_agent_tracker"
+
+  REDSHIFT_DB: dev
+  REDSHIFT_PORT: "5439"
+  REDSHIFT_USER: cmm707
+  REDSHIFT_PASSWORD: Msc2418250
+  REDSHIFT_HOST: "moonagent-workgroup.710271914931.ap-southeast-1.redshift-serverless.amazonaws.com"

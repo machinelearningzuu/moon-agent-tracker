@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aggregator-job
+  namespace: cmm707-microservices
+spec:
+  schedule: "0 * * * *"  # Run every hour
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: aggregator
+            image: 710271914931.dkr.ecr.ap-southeast-1.amazonaws.com/aggregator-cronjob:latest
+            envFrom:
+              - configMapRef:
+                  name: db-config
+              - secretRef:
+                  name: db-credentials
+          restartPolicy: OnFailure
