@@ -68,7 +68,7 @@ jobs:
 
       - name: Archive test reports
         if: ${{ always() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: test-reports
           path: tests/reports/eks/
