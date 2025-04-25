@@ -66,10 +66,10 @@ jobs:
         run: |
           cd tests
           python run-tests-eks.py --env eks --html --verbose
-
+      
       - name: Archive test reports
         if: ${{ always() }}
-        uses: ./.github/actions/upload-artifact
+        uses: actions/upload-artifact@v3
         with:
           name: test-reports
           path: tests/reports/eks/
