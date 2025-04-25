@@ -66,13 +66,6 @@ jobs:
         run: |
           cd tests
           python run-tests-eks.py --env eks --html --verbose
-      
-      - name: Archive test reports
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-reports
-          path: tests/reports/eks/
 
       - name: Rollback to v1 if tests fail
         if: ${{ failure() }}
