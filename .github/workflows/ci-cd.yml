@@ -2,13 +2,14 @@ name: EKS Blue-Green Deployment
 
 permissions:
   contents: read
+  actions: read
 
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
 
 jobs:
   deploy-to-eks:
