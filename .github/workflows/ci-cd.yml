@@ -65,7 +65,7 @@ jobs:
       - name: Run comprehensive API tests
         run: |
           cd tests
-          python run_tests.py --env eks --html --verbose
+          python run-tests-eks.py --env eks --html --verbose
 
       - name: Archive test reports
         if: ${{ always() }}
