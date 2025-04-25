@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os
 import sys
+import logging
 import argparse
 import subprocess
-import logging
 from datetime import datetime
 
 # Set up logging

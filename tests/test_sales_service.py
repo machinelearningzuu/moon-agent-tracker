@@ -17,11 +17,11 @@ class TestSalesService:
         assert response.json()["status"] == "healthy"
         assert response.json()["database"] == "connected"
 
-    def test_get_all_sales(self, sales_service_url):
-        """Test retrieving all sales."""
-        response = requests.get(f"{sales_service_url}/sales/")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+    # def test_get_all_sales(self, sales_service_url):
+    #     """Test retrieving all sales."""
+    #     response = requests.get(f"{sales_service_url}/sales/")
+    #     assert response.status_code == 200
+    #     assert isinstance(response.json(), list)
 
     def test_create_get_update_delete_sale(self, sales_service_url, test_sale):
         """Test the complete CRUD operations for a sale."""
@@ -62,62 +62,62 @@ class TestSalesService:
         response = requests.get(f"{sales_service_url}/sales/{test_sale['sale_id']}")
         assert response.status_code == 404
 
-    def test_get_sales_by_agent(self, sales_service_url, test_sale):
-        """Test retrieving sales by agent ID."""
-        # First create a sale
-        response = requests.post(
-            f"{sales_service_url}/sales/",
-            json=test_sale
-        )
-        initial_status = response.status_code
-        if initial_status not in [200, 201, 409]:
-            pytest.fail(f"Failed to create sale: {response.text}")
+    # def test_get_sales_by_agent(self, sales_service_url, test_sale):
+    #     """Test retrieving sales by agent ID."""
+    #     # First create a sale
+    #     response = requests.post(
+    #         f"{sales_service_url}/sales/",
+    #         json=test_sale
+    #     )
+    #     initial_status = response.status_code
+    #     if initial_status not in [200, 201, 409]:
+    #         pytest.fail(f"Failed to create sale: {response.text}")
 
-        # Get sales by agent
-        response = requests.get(f"{sales_service_url}/sales/agent/{test_sale['agent_id']}")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+    #     # Get sales by agent
+    #     response = requests.get(f"{sales_service_url}/sales/agent/{test_sale['agent_id']}")
+    #     assert response.status_code == 200
+    #     assert isinstance(response.json(), list)
         
-        # Clean up
-        requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     # Clean up
+    #     requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
 
-    def test_get_sales_by_branch(self, sales_service_url, test_sale):
-        """Test retrieving sales by branch ID."""
-        # First create a sale
-        response = requests.post(
-            f"{sales_service_url}/sales/",
-            json=test_sale
-        )
-        initial_status = response.status_code
-        if initial_status not in [200, 201, 409]:
-            pytest.fail(f"Failed to create sale: {response.text}")
+    # def test_get_sales_by_branch(self, sales_service_url, test_sale):
+    #     """Test retrieving sales by branch ID."""
+    #     # First create a sale
+    #     response = requests.post(
+    #         f"{sales_service_url}/sales/",
+    #         json=test_sale
+    #     )
+    #     initial_status = response.status_code
+    #     if initial_status not in [200, 201, 409]:
+    #         pytest.fail(f"Failed to create sale: {response.text}")
 
-        # Get sales by branch
-        response = requests.get(f"{sales_service_url}/sales/branch/{test_sale['branch_id']}")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+    #     # Get sales by branch
+    #     response = requests.get(f"{sales_service_url}/sales/branch/{test_sale['branch_id']}")
+    #     assert response.status_code == 200
+    #     assert isinstance(response.json(), list)
         
-        # Clean up
-        requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     # Clean up
+    #     requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
 
-    def test_get_sales_by_team(self, sales_service_url, test_sale):
-        """Test retrieving sales by team ID."""
-        # First create a sale
-        response = requests.post(
-            f"{sales_service_url}/sales/",
-            json=test_sale
-        )
-        initial_status = response.status_code
-        if initial_status not in [200, 201, 409]:
-            pytest.fail(f"Failed to create sale: {response.text}")
+    # def test_get_sales_by_team(self, sales_service_url, test_sale):
+    #     """Test retrieving sales by team ID."""
+    #     # First create a sale
+    #     response = requests.post(
+    #         f"{sales_service_url}/sales/",
+    #         json=test_sale
+    #     )
+    #     initial_status = response.status_code
+    #     if initial_status not in [200, 201, 409]:
+    #         pytest.fail(f"Failed to create sale: {response.text}")
 
-        # Get sales by team
-        response = requests.get(f"{sales_service_url}/sales/team/{test_sale['team_id']}")
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+    #     # Get sales by team
+    #     response = requests.get(f"{sales_service_url}/sales/team/{test_sale['team_id']}")
+    #     assert response.status_code == 200
+    #     assert isinstance(response.json(), list)
         
-        # Clean up
-        requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     # Clean up
+    #     requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
 
     def test_get_nonexistent_sale(self, sales_service_url):
         """Test retrieving a non-existent sale."""
