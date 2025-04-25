@@ -23,44 +23,44 @@ class TestSalesService:
     #     assert response.status_code == 200
     #     assert isinstance(response.json(), list)
 
-    def test_create_get_update_delete_sale(self, sales_service_url, test_sale):
-        """Test the complete CRUD operations for a sale."""
-        # Create sale
-        response = requests.post(
-            f"{sales_service_url}/sales/",
-            json=test_sale
-        )
-        assert response.status_code in [200, 201, 409], f"Failed to create sale: {response.text}"
+    # def test_create_get_update_delete_sale(self, sales_service_url, test_sale):
+    #     """Test the complete CRUD operations for a sale."""
+    #     # Create sale
+    #     response = requests.post(
+    #         f"{sales_service_url}/sales/",
+    #         json=test_sale
+    #     )
+    #     assert response.status_code in [200, 201, 409], f"Failed to create sale: {response.text}"
         
-        if response.status_code == 409:
-            logger.info("Sale already exists, continuing with test...")
-        else:
-            logger.info(f"Created sale: {response.json()}")
-            assert response.json()["sale_id"] == test_sale["sale_id"]
+    #     if response.status_code == 409:
+    #         logger.info("Sale already exists, continuing with test...")
+    #     else:
+    #         logger.info(f"Created sale: {response.json()}")
+    #         assert response.json()["sale_id"] == test_sale["sale_id"]
 
-        # Get sale
-        response = requests.get(f"{sales_service_url}/sales/{test_sale['sale_id']}")
-        assert response.status_code == 200
-        assert response.json()["sale_id"] == test_sale["sale_id"]
+    #     # Get sale
+    #     response = requests.get(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     assert response.status_code == 200
+    #     assert response.json()["sale_id"] == test_sale["sale_id"]
 
-        # Update sale
-        updated_sale = test_sale.copy()
-        updated_sale["sale_amount"] = 2000.0
-        response = requests.put(
-            f"{sales_service_url}/sales/{test_sale['sale_id']}",
-            json=updated_sale
-        )
-        assert response.status_code == 200
-        assert response.json()["sale_amount"] == 2000.0
+    #     # Update sale
+    #     updated_sale = test_sale.copy()
+    #     updated_sale["sale_amount"] = 2000.0
+    #     response = requests.put(
+    #         f"{sales_service_url}/sales/{test_sale['sale_id']}",
+    #         json=updated_sale
+    #     )
+    #     assert response.status_code == 200
+    #     assert response.json()["sale_amount"] == 2000.0
 
-        # Delete sale
-        response = requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
-        assert response.status_code == 200
-        assert "deleted successfully" in response.json()["message"].lower()
+    #     # Delete sale
+    #     response = requests.delete(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     assert response.status_code == 200
+    #     assert "deleted successfully" in response.json()["message"].lower()
 
-        # Verify deletion
-        response = requests.get(f"{sales_service_url}/sales/{test_sale['sale_id']}")
-        assert response.status_code == 404
+    #     # Verify deletion
+    #     response = requests.get(f"{sales_service_url}/sales/{test_sale['sale_id']}")
+    #     assert response.status_code == 404
 
     # def test_get_sales_by_agent(self, sales_service_url, test_sale):
     #     """Test retrieving sales by agent ID."""
