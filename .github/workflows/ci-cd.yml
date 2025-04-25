@@ -9,7 +9,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 6 * * *'  # Daily at 6 AM UTC
+    - cron: '0 6 * * *'
 
 jobs:
   deploy-to-eks:
@@ -52,7 +52,7 @@ jobs:
           kubectl apply -f k8s/sales-integration-service-v2.yaml
           kubectl apply -f k8s/notification-service-v2.yaml
 
-      - name: Switch traffic to v2 (Blue-Green switch)
+      - name: Switch traffic to v2
         run: |
           kubectl patch service agent-service -n cmm707-microservices -p '{"spec":{"selector":{"app":"agent-service","version":"v2"}}}'
           kubectl patch service sales-integration-service -n cmm707-microservices -p '{"spec":{"selector":{"app":"sales-integration-service","version":"v2"}}}'
@@ -69,7 +69,7 @@ jobs:
 
       - name: Archive test reports
         if: ${{ always() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v1
         with:
           name: test-reports
           path: tests/reports/eks/
@@ -84,5 +84,4 @@ jobs:
 
       - name: Verify Deployment
         run: |
-          kubectl get pods -n cmm707-microservices
-          kubectl get svc -n cmm707-microservices
+          kubectl get pods,svc -n cmm707-microservices
